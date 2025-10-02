@@ -7,7 +7,7 @@
 [![Status](https://img.shields.io/badge/status-stable-brightgreen)](https://github.com/Rockroky/python-eml-to-pdf-converter-V2)
 [![Flask](https://img.shields.io/badge/flask-2.0%2B-orange)](https://flask.palletsprojects.com/)
 
-![Demo Screenshot](Demo/demo.png)
+
 
 
 ## ⭐ Caratteristiche Principali
@@ -97,7 +97,7 @@ python server.py
 
 ## 📄 Licenza
 
-MIT License - Vedi file [LICENSE](LICENSE)
+MIT License 
 
 ## ⚖️ Note Legali
 
