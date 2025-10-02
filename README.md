@@ -18,7 +18,6 @@
 - 🚀 Server locale auto-configurante
 - 📱 Design responsive per tutti i dispositivi
 - ✍️ Supporto file firmati (.p7m)
-- ⚖️ Conformità normativa per PEC
 
 ## 🔧 Architettura Tecnica
 
