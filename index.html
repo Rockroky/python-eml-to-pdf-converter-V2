@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <!-- <link rel="icon" type="image/png" href="Icon/icon.svg"> -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Convertitore EML to PDF</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📧 Convertitore EML to PDF</h1>
+            <p class="subtitle">Converti facilmente i tuoi file email in formato PDF</p>
+        </header>
+        
+        <main>
+            <section class="upload-section">
+                <div class="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-title"><strong>Carica il tuo file .eml</strong></p>
+                    <p class="upload-description">Trascina qui il file o clicca per selezionarlo</p>
+                    
+                    <form id="uploadForm" enctype="multipart/form-data">
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileInput" name="file" accept=".eml" required>
+                            <label for="fileInput" class="file-label">Scegli File</label>
+                        </div>
+                        
+                        <div id="fileStatus" class="file-status">
+                            <div class="file-status-icon">📄</div>
+                            <div class="file-status-details">
+                                <div class="file-status-name" id="fileName"></div>
+                                <div class="file-status-meta" id="fileMeta"></div>
+                            </div>
+                            <div class="file-status-actions">
+                                <button type="button" class="file-remove-btn" onclick="removeFile()">
+                                    ✕
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="button-group">
+                            <button type="button" class="btn btn-analyze" onclick="analyzeFile()">
+                                <span class="btn-icon">🔍</span>
+                                <span class="btn-text">Analizza Email</span>
+                            </button>
+                            <button type="button" id="convertBtn" class="btn btn-convert" onclick="convertToPDF()" disabled>
+                                <span class="btn-icon">📄</span>
+                                <span class="btn-text">Converti in PDF</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            
+            <div id="messages" class="messages-container"></div>
+            
+            <section id="preview" class="preview-section" style="display: none;">
+                <h3 class="preview-title">📋 Anteprima Email</h3>
+                <div class="preview-content">
+                    <div id="emailInfo" class="email-info"></div>
+                    <div id="attachmentsInfo" class="attachments-info"></div>
+                </div>
+            </section>
+        </main>
+        
+        <footer>
+            <p>&copy; 2025 FREE TO USE, UNDER THE MIT LICENSE</p>
+        </footer>
+    </div>
+
+    <script>
+        let currentEmailData = null;
+        
+        // Gestione cambio file
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                showFileStatus(file);
+                resetAnalysis();
+            } else {
+                hideFileStatus();
+            }
+        });
+        
+        function showFileStatus(file) {
+            const fileStatus = document.getElementById('fileStatus');
+            const fileName = document.getElementById('fileName');
+            const fileMeta = document.getElementById('fileMeta');
+            
+            fileName.textContent = file.name;
+            fileMeta.textContent = `${formatFileSize(file.size)} • ${file.type || 'application/octet-stream'}`;
+            
+            fileStatus.classList.add('show');
+        }
+        
+        function hideFileStatus() {
+            const fileStatus = document.getElementById('fileStatus');
+            fileStatus.classList.remove('show');
+        }
+        
+        function removeFile() {
+            const fileInput = document.getElementById('fileInput');
+            fileInput.value = '';
+            hideFileStatus();
+            resetAnalysis();
+            showMessage('File rimosso', 'success');
+        }
+        
+        function resetAnalysis() {
+            currentEmailData = null;
+            document.getElementById('convertBtn').disabled = true;
+            document.getElementById('preview').style.display = 'none';
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Byte';
+            const k = 1024;
+            const sizes = ['Byte', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showMessage(text, type = 'success') {
+            const messages = document.getElementById('messages');
+            messages.innerHTML = `<div class="message ${type}">${text}</div>`;
+            if (type !== 'processing') {
+                setTimeout(() => messages.innerHTML = '', 5000);
+            }
+        }
+        
+        async function analyzeFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('Seleziona un file .eml prima!', 'error');
+                return;
+            }
+            
+            if (!file.name.toLowerCase().endsWith('.eml')) {
+                showMessage('Il file deve avere estensione .eml', 'error');
+                return;
+            }
+            
+            showMessage('🔄 Analizzando il file email...', 'processing');
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/parse-eml', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Errore durante l\'analisi');
+                }
+                
+                const data = await response.json();
+                currentEmailData = data;
+                displayPreview(data);
+                document.getElementById('convertBtn').disabled = false;
+                showMessage('✅ File analizzato con successo!');
+                
+            } catch (error) {
+                showMessage(`❌ Errore: ${error.message}`, 'error');
+                console.error('Errore:', error);
+            }
+        }
+        
+        function displayPreview(data) {
+            const preview = document.getElementById('preview');
+            const emailInfo = document.getElementById('emailInfo');
+            const attachmentsInfo = document.getElementById('attachmentsInfo');
+            
+            // Informazioni email
+            emailInfo.innerHTML = `
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">📧 Oggetto:</span>
+                        <span class="info-value">${data.subject}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">👤 Da:</span>
+                        <span class="info-value">${data.sender}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">👥 A:</span>
+                        <span class="info-value">${data.recipient}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">📅 Data:</span>
+                        <span class="info-value">${data.date}</span>
+                    </div>
+                </div>
+                <div class="body-preview">
+                    <h4>📝 Contenuto:</h4>
+                    <div class="body-content">${data.body}</div>
+                </div>
+            `;
+            
+            // Allegati
+            let attachmentsHtml = `
+                <div class="attachments-header">
+                    <h4>📎 Allegati (${data.attachments ? data.attachments.length : 0})</h4>
+                </div>
+            `;
+            
+            if (data.attachments && data.attachments.length > 0) {
+                attachmentsHtml += '<div class="attachments-grid">';
+                
+                data.attachments.forEach(att => {
+                    attachmentsHtml += `
+                        <div class="attachment-item">
+                            <div class="attachment-icon">📎</div>
+                            <div class="attachment-details">
+                                <div class="attachment-name">${att.filename}</div>
+                                <div class="attachment-meta">${att.size} • ${att.content_type}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                attachmentsHtml += '</div>';
+            } else {
+                attachmentsHtml += '<p class="no-attachments">Nessun allegato trovato</p>';
+            }
+            
+            attachmentsInfo.innerHTML = attachmentsHtml;
+            preview.style.display = 'block';
+            preview.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        async function convertToPDF() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showMessage('Seleziona un file prima!', 'error');
+                return;
+            }
+            
+            showMessage('📄 Generando PDF...', 'processing');
+            document.getElementById('convertBtn').disabled = true;
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            try {
+                const response = await fetch('/api/convert-to-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Errore durante la conversione');
+                }
+                
+                // Scarica il PDF
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name.replace('.eml', '.pdf');
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                showMessage('✅ PDF generato e scaricato!');
+                
+            } catch (error) {
+                showMessage(`❌ Errore: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('convertBtn').disabled = false;
+            }
+        }
+
+        // Gestione drag and drop
+        const uploadArea = document.querySelector('.upload-area');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, preventDefaults, false);
+        });
+        
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, highlight, false);
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            uploadArea.addEventListener(eventName, unhighlight, false);
+        });
+        
+        function highlight() {
+            uploadArea.classList.add('drag-over');
+        }
+        
+        function unhighlight() {
+            uploadArea.classList.remove('drag-over');
+        }
+        
+        uploadArea.addEventListener('drop', handleDrop, false);
+        
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                document.getElementById('fileInput').files = files;
+                // Trigger change event manually
+                document.getElementById('fileInput').dispatchEvent(new Event('change'));
+            }
+        }
+    </script>
+</body>
+</html>
