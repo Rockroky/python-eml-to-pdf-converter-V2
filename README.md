@@ -5,7 +5,6 @@
 [![Python Version](https://img.shields.io/badge/python-3.6%2B-blue)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![Status](https://img.shields.io/badge/status-stable-brightgreen)](https://github.com/Rockroky/python-eml-to-pdf-converter-V2)
-[![Flask](https://img.shields.io/badge/flask-2.0%2B-orange)](https://flask.palletsprojects.com/)
 
 
 
@@ -29,7 +28,7 @@
 
 ### Componenti Principali
 ```
-server.py     # Server Flask e API endpoints
+server.py     # Server k e API endpoints
 v3.py         # Core engine di conversione
 index.html    # UI responsive
 style.css     # Design system moderno
