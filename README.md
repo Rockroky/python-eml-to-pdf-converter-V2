@@ -89,12 +89,6 @@ python server.py
 - **Upload non funziona**: Controlla dimensione file
 - **Errori PDF**: Verifica permessi cartella output
 
-## 🛣️ Roadmap
-
-- [ ] Supporto batch conversion
-- [ ] Temi PDF personalizzabili
-- [ ] API key authentication
-
 ## 📄 Licenza
 
 MIT License 
